@@ -77,12 +77,15 @@ async function onLoadMore() {
       "We're sorry, but you've reached the end of search results."
     );
   }
-
   initLightbox();
 }
 
 function onGalleryClick(evt) {
   if (evt.target.nodeName === 'IMG') {
-    lightbox.open();
+    const clickedImage = evt.target
+      .closest('.photo-card')
+      .querySelector('a')
+      .getAttribute('href');
+    lightbox.open(clickedImage);
   }
 }
