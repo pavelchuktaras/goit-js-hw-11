@@ -2,90 +2,86 @@ import Notiflix from 'notiflix';
 import SimpleLightbox from 'simplelightbox';
 import 'simplelightbox/dist/simple-lightbox.min.css';
 
-import { gettingImg } from './api.js';
-import { createMarkup } from './functions.js';
+import { gettingImg } from './api';
+import { createMarkup } from './functions';
 
-const form = document.getElementById('search-form');
-const gallery = document.querySelector('.gallery');
-const loadMoreButton = document.querySelector('.load-more');
+let page = 1;
+let querry = '';
 
-form.addEventListener('submit', onSubmit);
-loadMoreButton.addEventListener('click', onLoadMore);
-gallery.addEventListener('click', onGalleryClick);
+const refs = {
+  form: document.querySelector('#search-form'),
+  gallery: document.querySelector('.gallery'),
+  btnLoadMore: document.querySelector('.load-more'),
+};
+const gallerySLb = new SimpleLightbox('.gallery a', {
+  captionsData: 'alt',
+  captionDelay: '250',
+});
 
-let currentPage = 1;
-let lightbox;
+refs.form.addEventListener('submit', onSubmit);
+refs.btnLoadMore.addEventListener('click', fetchImages);
 
-async function onSubmit(evt) {
-  evt.preventDefault();
-  currentPage = 1;
-
-  const searchQuery = form.elements.searchQuery.value;
-  const res = await gettingImg(searchQuery);
-  const totalHits = res.data.totalHits;
-  const images = res.data.hits;
-
-  if (searchQuery.length === 0 || images.length === 0) {
-    Notiflix.Notify.failure(
-      'Sorry, there are no images matching your search query. Please try again.'
-    );
-    gallery.innerHTML = '';
-  } else {
-    const markup = createMarkup(images);
-    gallery.innerHTML = markup;
-  }
-
-  if (images.length < totalHits) {
-    loadMoreButton.style.display = 'block';
-  } else {
-    loadMoreButton.style.display = 'none';
-    Notiflix.Notify.info(
-      "We're sorry, but you've reached the end of search results."
-    );
-  }
-
-  onReset();
-  initLightbox();
+function onSubmit(event) {
+  event.preventDefault();
+  const inputValue = refs.form.elements.searchQuery.value.trim();
+  if (inputValue === '') return Notiflix.Notify.failure('Empty query!');
+  querry = inputValue;
+  clearImgList();
+  page = 1;
+  fetchImages()
+    .then(hits => {
+      if (hits) {
+        refs.btnLoadMore.classList.remove('invisible');
+      }
+    })
+    .catch(onError)
+    .finally(() => refs.form.reset());
 }
 
-function onReset() {
-  form.reset();
-}
-
-function initLightbox() {
-  lightbox = new SimpleLightbox('.gallery a', {
-    captions: true,
-    captionDelay: 400,
-    captionsData: 'alt',
-    imageSize: 'original',
-  });
-}
-
-async function onLoadMore() {
-  currentPage++;
-
-  const searchQuery = form.elements.searchQuery.value;
-  const res = await gettingImg(searchQuery, currentPage);
-  const images = res.data.hits;
-
-  const markup = createMarkup(images);
-  gallery.insertAdjacentHTML('beforeend', markup);
-
-  if (gallery.children.length >= res.data.totalHits) {
-    loadMoreButton.style.display = 'none';
-    Notiflix.Notify.info(
-      "We're sorry, but you've reached the end of search results."
-    );
+async function fetchImages() {
+  try {
+    const data = await gettingImg(querry, page);
+    const markup = await generateGalleryItems(data.hits);
+    const totalHits = data.totalHits;
+    if (isLastPage(totalHits)) {
+      hideLoadMoreButton();
+      showEndOfResultsMessage();
+    }
+    page += 1;
+    await renderGallery(markup);
+    return totalHits;
+  } catch (err) {
+    onError(err);
   }
-  initLightbox();
 }
 
-function onGalleryClick(evt) {
-  if (evt.target.nodeName === 'IMG') {
-    const clickedImage = evt.target
-      .closest('.photo-card')
-      .querySelector('a')
-      .getAttribute('href');
-    lightbox.open(clickedImage);
-  }
+function isLastPage(totalHits) {
+  return page * 40 >= totalHits;
+}
+
+function showEndOfResultsMessage() {
+  Notiflix.Notify.info(
+    "We're sorry, but you've reached the end of search results."
+  );
+}
+
+function hideLoadMoreButton() {
+  refs.btnLoadMore.classList.add('invisible');
+}
+
+function generateGalleryItems(data) {
+  return data.map(currentEl => createMarkup(currentEl)).join('');
+}
+
+function renderGallery(markup) {
+  refs.gallery.insertAdjacentHTML('beforeend', markup);
+  gallerySLb.refresh();
+}
+
+function clearImgList() {
+  refs.gallery.innerHTML = '';
+}
+
+function onError(error) {
+  Notiflix.Notify.failure(error.message);
 }

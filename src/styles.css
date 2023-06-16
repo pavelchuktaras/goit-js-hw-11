@@ -1,15 +1,3 @@
-.container {
-  /* min-width: 320px; */
-  max-width: 448px;
-  padding-left: 15px;
-  padding-right: 15px;
-  margin-left: auto;
-  margin-right: auto;
-
-  outline: 2px solid red;
-  outline-offset: -2px;
-}
-
 .search-form {
   display: flex;
   align-items: center;
@@ -82,15 +70,12 @@ a {
   color: rgb(43, 39, 39);
   /* font-family: fantasy; */
   display: flex;
+  flex-direction: column;
 }
 
 .photo-card,
 .photo-card * {
   font-family: 'Roboto', Arial, sans-serif;
-}
-
-.info {
-  margin-top: 10px;
 }
 
 .box-likes {
@@ -104,6 +89,8 @@ a {
 }
 
 .info-item {
+  display: flex;
+  align-items: center;
   margin-bottom: 5px;
 }
 
@@ -125,4 +112,8 @@ a {
 
 .load-more:active {
   background-color: #45a049;
+}
+
+.invisible {
+  display: none;
 }
