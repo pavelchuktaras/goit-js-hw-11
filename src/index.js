@@ -45,6 +45,11 @@ async function fetchImages() {
     const totalHits = data.totalHits;
     if (isLastPage(totalHits)) {
       hideLoadMoreButton();
+      if (totalHits === 0) {
+        throw new Error(
+          'Sorry, there are no images matching your search query.'
+        );
+      }
       showEndOfResultsMessage();
     }
     page += 1;
